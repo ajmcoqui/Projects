@@ -1,15 +1,14 @@
 library(shiny)
-library(shinyjs)
 library(bslib)
 source("global.R")
 
 ui <- fluidPage(
     theme = bs_theme(version = 4, bootswatch = "cerulean"),
-    useShinyjs(), # This is just here so the code gets displayed below instead of next to the app
-    titlePanel("Random Name Picker for CCC 50/50 Raffle"),
+    titlePanel("Random Name Picker for CCC Raffles"),
 
     sidebarLayout(
-        sidebarPanel(
+        sidebarPanel(width = 5,
+            h6("You can upload the givesmart output file as-is, as long as it's a CSV file."),
             fileInput("uploaded_file", "Choose CSV File",
                       multiple = FALSE,
                       accept = c("text/csv",
@@ -24,8 +23,6 @@ ui <- fluidPage(
 )
 
 server <- function(input, output) {
-    shinyjs::runjs('toggleCodePosition();') # This is just here so the code gets displayed below instead of next to the app
-
     output$caption <- renderText("And the winner is...")
     output$random_name <- renderTable(
         {
