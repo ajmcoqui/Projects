@@ -9,7 +9,7 @@ ui <- fluidPage(
     titlePanel("Random Name Picker for CCC 50/50 Raffle"),
 
     sidebarLayout(
-        sidebarPanel(width = 3,
+        sidebarPanel(
             fileInput("uploaded_file", "Choose CSV File",
                       multiple = FALSE,
                       accept = c("text/csv",

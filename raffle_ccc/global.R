@@ -4,7 +4,9 @@ library(tidyr)
 
 # returns dataframe with firstname/lastname columns, one row per ticket purchased
 normalize_data <- function(csv_filepath) {
-  raw_data <- read_csv(csv_filepath)
+  raw_data <- read_csv(csv_filepath) %>% 
+    select(firstname, lastname, num_tickets) %>%
+    filter(!is.na(num_tickets))
   expanded_data <- uncount(raw_data, num_tickets)
   expanded_data
 }
