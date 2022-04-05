@@ -8,6 +8,7 @@ ui <- fluidPage(
 
     sidebarLayout(
         sidebarPanel(width = 5,
+            numericInput("num_winners", "Number of winners to pick", value = 1),
             h6("You can upload the givesmart output file as-is, as long as it's a CSV file."),
             fileInput("uploaded_file", "Choose CSV File",
                       multiple = FALSE,
@@ -23,11 +24,21 @@ ui <- fluidPage(
 )
 
 server <- function(input, output) {
-    output$caption <- renderText("And the winner is...")
+    output$caption <- renderText(
+        {
+            req(input$num_winners)
+            if(input$num_winners > 1) {
+                cap <- "And the winners are..."
+            } else {
+                cap <- "And the winner is..."
+            }
+            return(cap)
+        }
+    )
     output$random_name <- renderTable(
         {
-            req(input$uploaded_file)
-            rm <- pick_random_name(input$uploaded_file$datapath)
+            req(input$uploaded_file, input$num_winners)
+            rm <- pick_random_name(input$uploaded_file$datapath, input$num_winners)
             return(rm)
         },
         colnames = FALSE
