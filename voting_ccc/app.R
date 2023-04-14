@@ -1,5 +1,7 @@
 library(shiny)
 library(bslib)
+library(DT)
+library(data.table)
 source("global.R")
 
 ui <- fluidPage(
@@ -14,21 +16,22 @@ ui <- fluidPage(
         selectInput("voter",
                     "Your name:",
                     choices = member_list$full_name),
-        h5("Do you agree that we should shift the member calendar to match the fiscal calendar?"),
+        h6("Do you agree that we should shift the member calendar to match the fiscal calendar, to simplify operations?"),
         radioButtons("calendar",
                      "",
                      choices = c("yes", "no"),
                      selected = "yes",
                      inline = TRUE),
-        h5("Please pick up to three candidates for the CCC Board."),
+        h6("Please pick up to three candidates for the CCC Board."),
         checkboxGroupInput(
             "candidates",
             "",
             choices = candidate_list$full_name
         ),
         hr(),
-        h4("Proxies"),
-        tableOutput("proxy_names"),
+        textOutput("proxy_message"),
+        br(),
+        dataTableOutput("proxy_names"),
         actionButton("submit_button",
                      "Submit vote",
                      icon("broom"),
@@ -38,19 +41,38 @@ ui <- fluidPage(
 )
 
 server <- function(input, output) {
-
-    output$proxy_names <- renderTable(
+    
+    proxies <- reactive(
         {
-            req(input$voter)
-            proxies <- proxy_list |> 
+            proxy_list |> 
                 filter(proxy == input$voter) |> 
                 select(member = voter)
-            if (count(proxies) > 0) {
-                return(proxies)
-            } else {
-                message <- "You are not designated as another member's proxy."
-                display <- data.frame(message)
-                return(display)
+        }
+    )
+    
+    output$proxy_message <- renderText(
+        {
+            if (count(proxies()) > 0) {
+                return("It looks like you are designated as a proxy for at least one other CCC member. Please vote on their behalf below. \n")
+            }
+        }
+    )
+    
+    output$proxy_names <- renderDataTable(
+        {
+            req(input$voter)
+            if (count(proxies()) > 0) {
+                proxy_tbl <- data.table(proxies(), vote = NA)
+                proxy_tbl[, row_select_id := paste0("row_select_", .I)][, calendar_vote := as.character(radioButtons(inputId=row_select_id, label=NULL, choices=c("yes", "no"), selected = "yes")), by = row_select_id]
+                proxy_tbl[, row_check_id := paste0("row_checks_", .I)][, board_vote := as.character(checkboxGroupInput(inputId=row_check_id, label=NULL, choices=candidate_list$full_name)), by = row_check_id]
+                proxy_tbl <- select(proxy_tbl, -vote, -row_select_id, -row_check_id)
+                proxy_dt <- datatable(proxy_tbl, rownames = FALSE, escape = FALSE,
+                                      options = list(dom = 't',
+                                                     order = list(list(1, 'asc')),
+                                                     preDrawCallback = JS('function() { Shiny.unbindAll(this.api().table().node()); }'),
+                                                     drawCallback = JS('function() { Shiny.bindAll(this.api().table().node()); }'))
+                                      )
+                return(proxy_dt)
             }
         },
         colnames = FALSE
@@ -59,11 +81,11 @@ server <- function(input, output) {
     output$submit_vote <- renderText(
         {
             req(input$submit_button)
-            # TODO write data to remote spreadsheet
             member <- input$voter
             calendar_vote <- input$calendar
             board_vote <- input$candidates
             votes <- data.frame(member, calendar_vote, board_vote)
+        # TODO write to remote Google drive
             write_csv(votes, "2023AnnualMeetingVotes.csv", append = TRUE)
             return("Your vote has been submitted. Thanks!")
         }
