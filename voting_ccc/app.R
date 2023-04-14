@@ -4,6 +4,8 @@ library(DT)
 library(data.table)
 source("global.R")
 
+# TODO optimize for mobile devices
+
 ui <- fluidPage(
     # This JS file restricts the number of Board members that can be selected from the list to three.
     includeScript(path = "js4checkbox.js"),
@@ -50,6 +52,9 @@ server <- function(input, output) {
         }
     )
     
+    # Empty data frame to hold proxy vote data
+    proxy_input_map <- reactiveValues()
+    
     output$proxy_message <- renderText(
         {
             if (count(proxies()) > 0) {
@@ -65,6 +70,10 @@ server <- function(input, output) {
                 proxy_tbl <- data.table(proxies(), vote = NA)
                 proxy_tbl[, row_select_id := paste0("row_select_", .I)][, calendar_vote := as.character(radioButtons(inputId=row_select_id, label=NULL, choices=c("yes", "no"), selected = "yes")), by = row_select_id]
                 proxy_tbl[, row_check_id := paste0("row_checks_", .I)][, board_vote := as.character(checkboxGroupInput(inputId=row_check_id, label=NULL, choices=candidate_list$full_name)), by = row_check_id]
+                # Grab the input IDs associated with each member so we can get the values later
+                pim <- proxy_tbl |> select(member, row_select_id, row_check_id) |> data.frame()
+                proxy_input_map$pim <- pim
+                # Remove unneeded columns and convert to a datatable for rendering
                 proxy_tbl <- select(proxy_tbl, -vote, -row_select_id, -row_check_id)
                 proxy_dt <- datatable(proxy_tbl, rownames = FALSE, escape = FALSE,
                                       options = list(dom = 't',
@@ -74,8 +83,7 @@ server <- function(input, output) {
                                       )
                 return(proxy_dt)
             }
-        },
-        colnames = FALSE
+        }
     )
     
     output$submit_vote <- renderText(
@@ -85,6 +93,10 @@ server <- function(input, output) {
             calendar_vote <- input$calendar
             board_vote <- input$candidates
             votes <- data.frame(member, calendar_vote, board_vote)
+            if(count(proxies()) > 0) {
+                # TODO grab the proxy votes and add to the votes df
+                print(proxy_input_map$pim)
+            }
         # TODO write to remote Google drive
             write_csv(votes, "2023AnnualMeetingVotes.csv", append = TRUE)
             return("Your vote has been submitted. Thanks!")
