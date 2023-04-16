@@ -76,7 +76,7 @@ server <- function(input, output) {
                 proxy_input_map$pim <- pim
                 # Remove unneeded columns and convert to a datatable for rendering
                 proxy_tbl <- select(proxy_tbl, -vote, -row_select_id, -row_check_id)
-                proxy_dt <- datatable(proxy_tbl, rownames = FALSE, escape = FALSE,
+                proxy_dt <- datatable(proxy_tbl, rownames = FALSE, escape = FALSE, selection = "none",
                                       options = list(dom = 't',
                                                      order = list(list(1, 'asc')),
                                                      preDrawCallback = JS('function() { Shiny.unbindAll(this.api().table().node()); }'),
@@ -121,6 +121,12 @@ server <- function(input, output) {
             }
         # TODO write to remote Google drive
             write_csv(votes, "2023AnnualMeetingVotes.csv", append = TRUE)
+            wb <- drive_get("ccc_votes_2023")
+            dt <- read_sheet(wb)
+            
+            new_entry <- votes
+            sheet_append(wb$id, new_entry)
+            
             return("Your vote has been submitted. Thanks!")
         }
     )

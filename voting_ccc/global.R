@@ -2,6 +2,8 @@ library(readr)
 library(dplyr)
 library(tidyr)
 library(stringr)
+library(googledrive)
+library(googlesheets4)
 
 member_csv_filepath <- "data/Current_Members_2023-03-29.csv"
 proxy_csv_filepath <- "data/CCC 2022 Proxy for Board Member Vote on April 30.csv"
@@ -48,4 +50,8 @@ candidate_list <- read_csv(candidate_csv_filepath)
 # Add a column for for the full name, to be used in the UI
 candidate_full_name <- candidate_list |> unite(col = "full_name", c(first_name, last_name), sep = " ")
 candidate_list <- cbind(candidate_list, candidate_full_name)
+
+# Establish  authorization to Google Drive and Google Sheets to store the voting data
+drive_auth(cache = ".secrets", email = Sys.getenv("GOOGLE_EMAIL"))
+gs4_auth(token = drive_token())
 
