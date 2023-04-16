@@ -2,6 +2,7 @@ library(shiny)
 library(bslib)
 library(DT)
 library(data.table)
+library(purrr)
 source("global.R")
 
 # TODO optimize for mobile devices
@@ -85,17 +86,38 @@ server <- function(input, output) {
             }
         }
     )
-    
+
     output$submit_vote <- renderText(
         {
             req(input$submit_button)
+            # Capture the vote of the present member
             member <- input$voter
             calendar_vote <- input$calendar
             board_vote <- input$candidates
             votes <- data.frame(member, calendar_vote, board_vote)
+            
+            # If there are proxies, capture those votes, too
             if(count(proxies()) > 0) {
-                # TODO grab the proxy votes and add to the votes df
-                print(proxy_input_map$pim)
+              # Helper functions to pull the data out of the inputs
+              get_proxy_vote_by_id <- function(input_id){
+                input[[input_id]]
+              }
+              
+              create_voter_record <- function(proxy_row){
+                member <- proxy_row$member
+                calendar_vote <- proxy_row$row_select_id |>
+                    get_proxy_vote_by_id()
+                board_vote <- proxy_row$row_check_id |>
+                    get_proxy_vote_by_id()
+                voter_record <- data.frame(member, calendar_vote, board_vote)
+                return(voter_record)
+              }
+              
+              # Iterate through proxies, get votes, and add to the data.frame
+              for (row in 1:nrow(proxy_input_map$pim)) {
+                  proxy_vote <- create_voter_record(proxy_input_map$pim[row,])
+                  votes <- rbind(votes, proxy_vote)
+              }
             }
         # TODO write to remote Google drive
             write_csv(votes, "2023AnnualMeetingVotes.csv", append = TRUE)
