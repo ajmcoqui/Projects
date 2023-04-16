@@ -10,8 +10,8 @@ source("global.R")
 ui <- fluidPage(
     # This JS file restricts the number of Board members that can be selected from the list to three.
     includeScript(path = "js4checkbox.js"),
-    theme = bs_theme(version = 4, bootswatch = "cerulean"),
-    img(src='ccc_logo.png', align = "right"),
+    theme = bs_theme(version = 5, bootswatch = "cerulean"),
+    img(src='ccc_logo.png', align = "top"),
     titlePanel("CCC Annual Meeting"),
     h4("Select your name, then cast your vote."),
 
@@ -94,7 +94,8 @@ server <- function(input, output) {
             member <- input$voter
             calendar_vote <- input$calendar
             board_vote <- input$candidates
-            votes <- data.frame(member, calendar_vote, board_vote)
+            timestamp <- Sys.time()
+            votes <- data.frame(member, calendar_vote, board_vote, timestamp)
             
             # If there are proxies, capture those votes, too
             if(count(proxies()) > 0) {
@@ -109,7 +110,7 @@ server <- function(input, output) {
                     get_proxy_vote_by_id()
                 board_vote <- proxy_row$row_check_id |>
                     get_proxy_vote_by_id()
-                voter_record <- data.frame(member, calendar_vote, board_vote)
+                voter_record <- data.frame(member, calendar_vote, board_vote, timestamp)
                 return(voter_record)
               }
               
@@ -119,11 +120,11 @@ server <- function(input, output) {
                   votes <- rbind(votes, proxy_vote)
               }
             }
-        # TODO write to remote Google drive
-            write_csv(votes, "2023AnnualMeetingVotes.csv", append = TRUE)
+            # For local testing
+            # write_csv(votes, "2023AnnualMeetingVotes.csv", append = TRUE)
+            # Write results to remote spreadsheet
             wb <- drive_get("ccc_votes_2023")
-            dt <- read_sheet(wb)
-            
+            # dt <- read_sheet(wb)
             new_entry <- votes
             sheet_append(wb$id, new_entry)
             
