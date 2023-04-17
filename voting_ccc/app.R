@@ -35,11 +35,16 @@ ui <- fluidPage(
         textOutput("proxy_message"),
         br(),
         dataTableOutput("proxy_names"),
+        h5("Verify your name again, please:"),
+        selectInput("voter_verify",
+                    "Your name:",
+                    choices = member_list$full_name),
         actionButton("submit_button",
                      "Submit vote",
                      icon("broom"),
                      style="color: #2596be; background-color: #2596be; border-color: #2e6da4"),
-        textOutput("submit_vote")
+        textOutput("submit_vote"),
+        h6("If you need to change your vote after you submit, please reload this page and revote - only your latest vote will be counted.")
     )
 )
 
@@ -95,8 +100,9 @@ server <- function(input, output) {
             member <- input$voter
             calendar_vote <- input$calendar
             board_vote <- input$candidates
+            member_verify <- input$voter_verify
             timestamp <- Sys.time()
-            votes <- data.frame(member, calendar_vote, board_vote, timestamp)
+            votes <- data.frame(member, calendar_vote, board_vote, member_verify, timestamp, proxy = NA)
             
             # If there are proxies, capture those votes, too
             if(count(proxies()) > 0) {
@@ -111,7 +117,8 @@ server <- function(input, output) {
                     get_proxy_vote_by_id()
                 board_vote <- proxy_row$row_check_id |>
                     get_proxy_vote_by_id()
-                voter_record <- data.frame(member, calendar_vote, board_vote, timestamp)
+                member_verify <- "proxy"
+                voter_record <- data.frame(member, calendar_vote, board_vote, member_verify, timestamp, proxy = input$voter)
                 return(voter_record)
               }
               
