@@ -131,11 +131,12 @@ server <- function(input, output) {
             # For local testing
             # write_csv(votes, "2023AnnualMeetingVotes.csv", append = TRUE)
             # Write results to remote spreadsheet
-            wb <- drive_get("ccc_votes_2023")
-            # dt <- read_sheet(wb)
-            new_entry <- votes
-            sheet_append(wb$id, new_entry)
-            
+            withProgress(message = "Logging your vote...", {
+                wb <- drive_get("ccc_votes_2023")
+                # dt <- read_sheet(wb)
+                new_entry <- votes
+                sheet_append(wb$id, new_entry)
+            })
             return("Your vote has been submitted. Thanks!")
         }
     )

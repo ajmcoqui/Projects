@@ -18,6 +18,8 @@ ui <- fluidPage(
         tableOutput("calendar_votes"),
         h5("Board candidate votes:"),
         tableOutput("board_votes"),
+        hr(),
+        hr(),
         h5("Are there any votes where the member name and verification name do not match? (If table is empty, none were found.)"),
         tableOutput("voter_verification"),
         h5("Has anyone submitted more than one vote?"),
