@@ -16,7 +16,7 @@ ui <- fluidPage(
         tableOutput("vote_counts"),
         h5("Calendar votes:"),
         tableOutput("calendar_votes"),
-        h5("Board candidate votes:"),
+        h5("Board candidate votes, including write-ins:"),
         tableOutput("board_votes"),
         hr(),
         hr(),
@@ -77,8 +77,9 @@ server <- function(input, output, session) {
         req(input$refresh)
         unique_votes <- raw_vote_data() |> unique()
         unique_members <- unique_votes |> select(member) |> unique()
-        # Get the most recent set of votes, in case of multiple submissions
+        # Empty object to hold the vote data
         final_votes <- data.frame(member = NA, calendar_vote = NA, board_vote = NA)
+        # Get the most recent set of votes, in case of multiple submissions
         for (m in unique_members$member) {
             member_votes <- unique_votes |> filter(member == m)
             latest_timestamp <- max(member_votes$timestamp, rm.na = TRUE)
@@ -103,14 +104,31 @@ server <- function(input, output, session) {
         req(input$refresh)
         unique_votes <- raw_vote_data() |> unique()
         unique_members <- unique_votes |> select(member) |> unique()
-        # Get the most recent set of votes, in case of multiple submissions
+        # Empty object to hold the vote data
         final_votes <- data.frame(member = NA, calendar_vote = NA, board_vote = NA)
+        # Iterate over the members to collect board votes, including write-ins
         for (m in unique_members$member) {
             member_votes <- unique_votes |> filter(member == m)
+            # Get the most recent set of votes, in case of multiple submissions by one member
             latest_timestamp <- max(member_votes$timestamp, rm.na = TRUE)
             latest_votes <- member_votes |> 
                 filter(timestamp == latest_timestamp) |> 
-                select(member, calendar_vote, board_vote)
+                select(member, calendar_vote, board_vote, writein_vote)
+            # If someone checked "Write-in" but didn't type in a name, remove that line
+            if("Write-in" %in% latest_votes$board_vote & is.na(unique(latest_votes$writein_vote))){
+                latest_votes <- latest_votes |> filter(board_vote != "Write-in")
+            }
+            # Add the write in candidate to the list of board votes, then get rid of the extra field
+            writein <- latest_votes$writein_vote |> unique()
+            merged_board_vote_list <- c(latest_votes$board_vote, writein)
+            latest_votes <- latest_votes |> select(-writein_vote)
+            # Remove the string "Write-in" and NA values
+            merged_board_vote_list <- merged_board_vote_list[! merged_board_vote_list %in% c("Write-in")]
+            merged_board_vote_list <- merged_board_vote_list[!is.na(merged_board_vote_list)]
+            # Update the board votes to include the write-ins
+            latest_votes <- latest_votes |> 
+                mutate(updated_votes = merged_board_vote_list) |> 
+                select(member, calendar_vote, board_vote = updated_votes)
             final_votes <- rbind(final_votes, latest_votes)
         }
 
@@ -125,20 +143,3 @@ server <- function(input, output, session) {
 }
 
 shinyApp(ui = ui, server = server)
-
-
-# vote_sheet <- drive_get("ccc_votes_2023")
-# Poll every 5 seconds for modified data, and update the app output
-# check_last_modified <- function() {
-#     vote_sheet_last_modified <- googledrive::drive_find("ccc_votes_2023", n_max = 1) |>
-#         mutate(modified = map_chr(drive_resource, "modifiedTime")) |> select(modified)
-#     return(vote_sheet_last_modified$modified)
-# }
-# member_votes <- reactivePoll(5000, session, 
-#                              checkFunc = function() {
-#                                  vote_sheet_last_modified <- googledrive::drive_find("ccc_votes_2023", n_max = 1) |>
-#                                      mutate(modified = map_chr(drive_resource, "modifiedTime")) |> select(modified)}, 
-#                              valueFunc = function() {
-#                                  read_sheet(vote_sheet)}
-#                              )
-

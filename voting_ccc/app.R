@@ -29,8 +29,9 @@ ui <- fluidPage(
         checkboxGroupInput(
             "candidates",
             "",
-            choices = candidate_list$full_name
+            choices = c(candidate_list$full_name, "Write-in")
         ),
+        textInput("writein", "Write-in candidate"),
         hr(),
         textOutput("proxy_message"),
         br(),
@@ -75,18 +76,20 @@ server <- function(input, output) {
             if (count(proxies()) > 0) {
                 proxy_tbl <- data.table(proxies(), vote = NA)
                 proxy_tbl[, row_select_id := paste0("row_select_", .I)][, calendar_vote := as.character(radioButtons(inputId=row_select_id, label=NULL, choices=c("yes", "no"), inline = TRUE, selected = "yes")), by = row_select_id]
-                proxy_tbl[, row_check_id := paste0("row_checks_", .I)][, board_vote := as.character(checkboxGroupInput(inputId=row_check_id, label=NULL, choices=candidate_list$full_name)), by = row_check_id]
+                proxy_tbl[, row_check_id := paste0("row_checks_", .I)][, board_vote := as.character(checkboxGroupInput(inputId=row_check_id, label=NULL, choices=c(candidate_list$full_name, "Write-in"))), by = row_check_id]
+                proxy_tbl[, row_writein_id := paste0("row_writein_", .I)][, writein_vote := as.character(textInput(inputId=row_writein_id, label=NULL)), by = row_writein_id]
                 # Grab the input IDs associated with each member so we can get the values later
-                pim <- proxy_tbl |> select(member, row_select_id, row_check_id) |> data.frame()
+                pim <- proxy_tbl |> select(member, row_select_id, row_check_id, row_writein_id) |> data.frame()
                 proxy_input_map$pim <- pim
                 # Remove unneeded columns and convert to a datatable for rendering
-                proxy_tbl <- select(proxy_tbl, -vote, -row_select_id, -row_check_id)
+                proxy_tbl <- select(proxy_tbl, -vote, -row_select_id, -row_check_id, -row_writein_id)
                 proxy_dt <- datatable(proxy_tbl, rownames = FALSE, escape = FALSE, selection = "none",
                                       options = list(dom = 't',
                                                      scrollX = TRUE,
                                                      order = list(list(1, 'asc')),
                                                      preDrawCallback = JS('function() { Shiny.unbindAll(this.api().table().node()); }'),
-                                                     drawCallback = JS('function() { Shiny.bindAll(this.api().table().node()); }'))
+                                                     drawCallback = JS('function() { Shiny.bindAll(this.api().table().node()); }')
+                                                     )
                                       )
                 return(proxy_dt)
             }
@@ -100,9 +103,10 @@ server <- function(input, output) {
             member <- input$voter
             calendar_vote <- input$calendar
             board_vote <- input$candidates
+            writein_vote <- input$writein
             member_verify <- input$voter_verify
             timestamp <- Sys.time()
-            votes <- data.frame(member, calendar_vote, board_vote, member_verify, timestamp, proxy = NA)
+            votes <- data.frame(member, calendar_vote, board_vote, writein_vote, member_verify, timestamp, proxy = NA)
             
             # If there are proxies, capture those votes, too
             if(count(proxies()) > 0) {
@@ -117,8 +121,10 @@ server <- function(input, output) {
                     get_proxy_vote_by_id()
                 board_vote <- proxy_row$row_check_id |>
                     get_proxy_vote_by_id()
+                writein_vote <- proxy_row$row_writein_id |> 
+                    get_proxy_vote_by_id()
                 member_verify <- "proxy"
-                voter_record <- data.frame(member, calendar_vote, board_vote, member_verify, timestamp, proxy = input$voter)
+                voter_record <- data.frame(member, calendar_vote, board_vote, writein_vote, member_verify, timestamp, proxy = input$voter)
                 return(voter_record)
               }
               
