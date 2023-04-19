@@ -5,14 +5,12 @@ library(data.table)
 library(purrr)
 source("global.R")
 
-# TODO optimize for mobile devices
-
 ui <- fluidPage(
     # This JS file restricts the number of Board members that can be selected from the list to three.
     includeScript(path = "js4checkbox.js"),
     theme = bs_theme(version = 5, bootswatch = "cerulean"),
     img(src='ccc_logo.png', align = "top"),
-    titlePanel("CCC Annual Meeting"),
+    titlePanel("CCC Annual Meeting Ballot"),
     h4("Select your name, then cast your vote."),
 
     mainPanel(
@@ -151,5 +149,3 @@ server <- function(input, output) {
 
 # Run the application 
 shinyApp(ui = ui, server = server)
-
-# TODO create separate app to read results from remote file

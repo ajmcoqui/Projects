@@ -12,6 +12,8 @@ ui <- fluidPage(
 
     mainPanel(
         actionButton("refresh", "Refresh data", style="color: #2596be; background-color: #2596be; border-color: #2e6da4"),
+        h5("Last Updated:"),
+        textOutput("time_of_refresh"),
         h5("Number of members who have voted (including proxies):"),
         tableOutput("vote_counts"),
         h5("Calendar votes:"),
@@ -28,6 +30,11 @@ ui <- fluidPage(
 )
 
 server <- function(input, output, session) {
+    
+    output$time_of_refresh <- renderText({
+        req(input$refresh)
+        Sys.time() |> ymd_hms(tz = "America/New_York") |> as.character()
+    })
 
     # Get the vote data when the Refresh button is clicked    
     raw_vote_data <- reactive({
