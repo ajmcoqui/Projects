@@ -123,14 +123,14 @@ server <- function(input, output, session) {
                 select(member, calendar_vote, board_vote, writein_vote)
             # If someone checked "Write-in" but didn't type in a name, remove that line
             if("Write-in" %in% latest_votes$board_vote & is.na(unique(latest_votes$writein_vote))){
-                latest_votes <- latest_votes |> filter(board_vote != "Write-in")
+                latest_votes <- latest_votes |> filter(board_vote != "Write-in (scroll right)")
             }
             # Add the write in candidate to the list of board votes, then get rid of the extra field
             writein <- latest_votes$writein_vote |> unique()
             merged_board_vote_list <- c(latest_votes$board_vote, writein)
             latest_votes <- latest_votes |> select(-writein_vote)
             # Remove the string "Write-in" and NA values
-            merged_board_vote_list <- merged_board_vote_list[! merged_board_vote_list %in% c("Write-in")]
+            merged_board_vote_list <- merged_board_vote_list[! merged_board_vote_list %in% c("Write-in (scroll right)")]
             merged_board_vote_list <- merged_board_vote_list[!is.na(merged_board_vote_list)]
             # Update the board votes to include the write-ins
             latest_votes <- latest_votes |> 
