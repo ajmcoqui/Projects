@@ -26,7 +26,7 @@ server <- function(input, output, session) {
         as.character(56)
     })
 
-    # Get the attendance data when the Refresh button is clicked    
+    # Get the attendance data when the Refresh button is clicked
     raw_attendance_data <- reactive({
         req(input$refresh)
         attendance_sheet <- drive_get("ccc_attendance_2023")

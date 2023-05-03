@@ -27,7 +27,7 @@ ui <- fluidPage(
         checkboxGroupInput(
             "candidates",
             "",
-            choices = c(candidate_list$full_name, "Write-in (enter below)")
+            choices = c(candidate_list$full_name, "Write-in")
         ),
         textInput("writein", "Write-in candidate"),
         hr(),
@@ -74,7 +74,7 @@ server <- function(input, output) {
             if (count(proxies()) > 0) {
                 proxy_tbl <- data.table(proxies(), vote = NA)
                 proxy_tbl[, row_select_id := paste0("row_select_", .I)][, calendar_vote := as.character(radioButtons(inputId=row_select_id, label=NULL, choices=c("yes", "no"), inline = TRUE, selected = "yes")), by = row_select_id]
-                proxy_tbl[, row_check_id := paste0("row_checks_", .I)][, board_vote := as.character(checkboxGroupInput(inputId=row_check_id, label=NULL, choices=c(candidate_list$full_name, "Write-in (scroll right)"))), by = row_check_id]
+                proxy_tbl[, row_check_id := paste0("row_checks_", .I)][, board_vote := as.character(checkboxGroupInput(inputId=row_check_id, label=NULL, choices=c(candidate_list$full_name, "Write-in"))), by = row_check_id]
                 proxy_tbl[, row_writein_id := paste0("row_writein_", .I)][, writein_vote := as.character(textInput(inputId=row_writein_id, label=NULL)), by = row_writein_id]
                 # Grab the input IDs associated with each member so we can get the values later
                 pim <- proxy_tbl |> select(member, row_select_id, row_check_id, row_writein_id) |> data.frame()
